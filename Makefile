@@ -6,3 +6,7 @@ all: client server
 %: %.c
 	gcc $< -o $@
 
+client: client.c id.c
+
+clean:
+	rm -f client server c_*.log
