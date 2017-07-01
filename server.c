@@ -23,13 +23,19 @@ int read_line(clientfd) {
     char buffer[1024] = {0};
     int readlen = recv(clientfd , buffer, 1024, 0);
     if(readlen <= 0)
-        return 1;
+        return 1; // some error / unclean disconnect
+    if(buffer[0] == 'E') {
+        send(clientfd, "K", 1, 0);
+        return 2; // clean disconnect
+    }
+    if(buffer[0] != 'L')
+        return 3; // unknown data
     int plsize = buffer[1] * 100 + buffer[2] * 10 + buffer[3];
     // 0 terminate to process as string
     buffer[4 + plsize] = 0;
     process_line(buffer + 4);
     send(clientfd, "K", 1, 0);
-    return 0;
+    return 0; // still working
 }
 
 void process_client(int serverfd) {

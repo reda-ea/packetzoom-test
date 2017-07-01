@@ -14,6 +14,13 @@ void die(char *msg, int status) {
     exit(status);
 }
 
+void clean_disconnect(int serverfd) {
+    char ack;
+    send(serverfd, "E", 1, 0);
+    recv(serverfd, &ack, 1, 0);
+    close(serverfd);
+}
+
 void send_line(int serverfd, char *line) {
     //NOTE line is 0 terminated, send message is not
     char buffer[1024];
@@ -53,5 +60,6 @@ int main(int argc, char *argv[]) {
     int clientid = stouid(argv[1]);
     printf("I am %d, sending %s\n", clientid, argv[1]);
     send_log(sockfd, clientid, argv[1]);
+    clean_disconnect(sockfd);
     return 0;
 }
