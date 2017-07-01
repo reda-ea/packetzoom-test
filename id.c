@@ -13,12 +13,8 @@ hash(unsigned char *str)
     return hash;
 }
 
-int stouid(char *str) {
-    return itouid(hash(str));
-}
-
 // https://gist.github.com/shabinesh/2403356
-int itouid(unsigned long u_id)
+unsigned long itouid(unsigned long u_id)
 {
     struct timeval t;
     unsigned long id;
@@ -26,4 +22,8 @@ int itouid(unsigned long u_id)
     id = (t.tv_sec * 1000 * 1000) + (t.tv_usec * 1000) << 42;
     id |= (u_id % 16777216) << 24;
     return id;
+}
+
+unsigned long stouid(char *str) {
+    return itouid(hash(str));
 }

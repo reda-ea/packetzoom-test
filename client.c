@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
         die("Can't understand localhost IP", 4);
     if(connect(sockfd, (struct sockaddr *) &address, sizeof(address)) < 0)
         die("Can't connect to server", 5);
-    int clientid = stouid(argv[1]);
-    printf("I am %d, sending %s\n", clientid, argv[1]);
+    unsigned long clientid = stouid(argv[1]);
+    printf("I am %lu, sending %s\n", clientid, argv[1]);
     send_log(sockfd, clientid, argv[1]);
     clean_disconnect(sockfd);
     return 0;
