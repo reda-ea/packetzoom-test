@@ -14,6 +14,14 @@ void die(char *msg, int status) {
     exit(status);
 }
 
+void clean_connect(int serverfd, unsigned long clientid) {
+    char ack;
+    char buffer[25];
+    sprintf(buffer, "I%019lu", clientid);
+    send(serverfd, buffer, 20, 0);
+    recv(serverfd, &ack, 1, 0);
+}
+
 void clean_disconnect(int serverfd) {
     char ack;
     send(serverfd, "E", 1, 0);
@@ -33,7 +41,7 @@ void send_line(int serverfd, char *line) {
     //TODO maybe check value of ack ?
 }
 
-void send_log(int serverfd, int clientid, char *filename) {
+void send_log(int serverfd, unsigned long clientid, char *filename) {
     char buffer[1024];
     FILE *logfile = fopen(filename, "r");
     while(fgets(buffer, sizeof(buffer), logfile)) {
@@ -59,6 +67,7 @@ int main(int argc, char *argv[]) {
         die("Can't connect to server", 5);
     unsigned long clientid = stouid(argv[1]);
     printf("I am %lu, sending %s\n", clientid, argv[1]);
+    clean_connect(sockfd, clientid);
     send_log(sockfd, clientid, argv[1]);
     clean_disconnect(sockfd);
     return 0;
