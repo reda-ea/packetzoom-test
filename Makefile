@@ -8,5 +8,7 @@ all: client server
 
 client: client.c id.c
 
+server: server.c kvstore.c
+
 clean:
 	rm -f client server c_*.log

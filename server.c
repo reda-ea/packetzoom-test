@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <string.h>
 
+#include "./kvstore.c"
+
 // assumptions:
 // lines are under 1024
 // lines are received completely in one send/read
@@ -20,6 +22,7 @@ struct client_info {
     int socket;
     char clientid[25];
     FILE *destfile;
+    int storepipe;
 };
 
 void initiate_client(struct client_info *client, char *clientid) {
@@ -34,6 +37,7 @@ void end_client(struct client_info *client) {
 }
 
 void process_line(struct client_info *client, char *line) {
+    write(client->storepipe, line, strlen(line) + 1);
     fprintf(client->destfile, "%s\n", line);
 }
 
@@ -64,7 +68,7 @@ int read_line(struct client_info *client) {
     return 3; // unknown data
 }
 
-void process_client(int serverfd) {
+void process_client(int serverfd, int storepipe) {
     struct sockaddr_in address;
     int addrlen;
     int clientfd = accept(serverfd, (struct sockaddr *) &address, &addrlen);
@@ -76,10 +80,21 @@ void process_client(int serverfd) {
     client.socket = clientfd;
     client.clientid[0] = 0;
     client.destfile = 0;
+    client.storepipe = storepipe;
     while(read_line(&client) == 0);
     //FIXME this is reached both on error and disconnect, process differently
     close(clientfd);
     exit(0);
+}
+
+int process_kv() {
+    int pipefd[2];
+    pipe(pipefd);
+    if(fork() > 0)
+        return pipefd[1]; //keep the write end of the pipe to share with clients
+    struct keydata *store = new_store();
+    // read from the pipe, dump on each store change
+    pipetostore(store, pipefd[0], dump_store);
 }
 
 int main(int argc, char *argv[]) {
@@ -91,9 +106,11 @@ int main(int argc, char *argv[]) {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(8109);
     if(bind(sockfd, (struct sockaddr *) &address, sizeof(address)) < 0)
-        die("Can't listen on 8109", 2);
-    listen(sockfd, 5);
+        die("Can't bind to 8109", 2);
+    int storepipe = process_kv();
+    if(listen(sockfd, 5) < 0)
+        die("Can't listen on 8109", 8);
     for(;;)
-        process_client(sockfd);
+        process_client(sockfd, storepipe);
     return 0;
 }
